@@ -1,0 +1,17 @@
+name: reviewdog
+on: [pull_request]
+jobs:
+  staticcheck:
+    name: Lint code base
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Run staticcheck
+        uses: reviewdog/action-staticcheck@v1
+        with:
+          github_token: ${{ secrets.github_token }}
+          reporter: github-pr-review
+          filter_mode: nofilter
+          fail_on_error: true
