@@ -6,15 +6,18 @@ import (
 
 	"ffxiv.anid.dev/internal/manager"
 	"github.com/gorilla/mux"
+	"github.com/rs/cors"
 )
 
 type Server struct {
 	router *mux.Router
-	tasks *manager.TasksManager
+	tasks  *manager.TasksManager
 }
 
 func (s *Server) Start() {
-	http.ListenAndServe(":8000", s.router)
+	handler := cors.Default().Handler(s.router)
+
+	http.ListenAndServe(":8000", handler)
 }
 
 // NewServer is a wire provider that returns a server
@@ -22,8 +25,8 @@ func NewServer(tasks *manager.TasksManager) *Server {
 	r := mux.NewRouter()
 
 	s := &Server{
-		router:r,
-		tasks: tasks,
+		router: r,
+		tasks:  tasks,
 	}
 
 	r.HandleFunc("/", s.yourHandler)
@@ -42,18 +45,18 @@ func (s *Server) tasksHandler(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, 500, err.Error())
 		return
 	}
-	
+
 	respondWithJSON(w, 200, tasks)
 }
 
 func respondWithError(w http.ResponseWriter, code int, message string) {
-    respondWithJSON(w, code, map[string]string{"error": message})
+	respondWithJSON(w, code, map[string]string{"error": message})
 }
 
 func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
-    response, _ := json.Marshal(payload)
+	response, _ := json.Marshal(payload)
 
-    w.Header().Set("Content-Type", "application/json")
-    w.WriteHeader(code)
-    w.Write(response)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	w.Write(response)
 }
