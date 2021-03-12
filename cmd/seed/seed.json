@@ -1,0 +1,100 @@
+{
+    "Weekly": {
+        "Gold Saucer": [
+            "Fashion Report",
+            "Jumbo Cactpot"
+        ],
+        "Custom Deliveries": [
+            "Zhloe",
+            "M'naago",
+            "Kurenai",
+            "Adkiragh",
+            "Kai-shirr",
+            "Ehll Tou"
+        ],
+        "Challenge Log": [
+            "Battles",
+            "PvP",
+            "FATE",
+            "Levequests",
+            "Crafting & Gathering",
+            "Treasure Hunt",
+            "Beast Tribes",
+            "Grand Company",
+            "Retainers",
+            "Gold Saucer",
+            "Eureka",
+            "Completion"
+        ],
+        "": [
+            "Doman Enclave",
+            "Wondrous Tales"
+        ],
+        "Raiding": [
+            "Eden 9 - Umbra",
+            "Eden 10 - Litany",
+            "Eden 11 - Anamorphosis",
+            "Eden 12 - Eternity"
+        ]
+    },
+    "Daily": {
+        "": [
+            "Treasure Map",
+            "Squadron Mission"
+        ],
+        "Beast Tribe Quests": [
+            "Amalj'aa",
+            "Sylphs",
+            "Kobolds",
+            "Sahagin",
+            "Ixal",
+            "Vanu Vanu",
+            "Vath",
+            "Moogles",
+            "Kojin",
+            "Ananta",
+            "Namazu",
+            "Dwarves",
+            "Qitari",
+            "Pixies"
+        ],
+        "Daily Hunts": [
+            "ARR",
+            "Heavensward",
+            "Stormblood",
+            "Shadowbringers"
+        ],
+        "Duty Roulettes": [
+            "Expert",
+            "Level 80",
+            "50/60/70",
+            "Leveling",
+            "Trial",
+            "MSQ",
+            "Guildhests",
+            "Alliance Raids",
+            "Normal Raids",
+            "Frontlines"
+        ],
+        "Gardening": [
+            "Garden Patch",
+            "Flowerpots"
+        ],
+        "Grand Company Turn-ins": [
+            "CRP",
+            "BSM",
+            "ARM",
+            "GSM",
+            "LTW",
+            "WVR",
+            "ALC",
+            "CUL",
+            "MIN",
+            "BTN",
+            "FSH"
+        ],
+        "Gold Saucer": [
+            "Mini Catpot"
+        ]
+    }
+}
