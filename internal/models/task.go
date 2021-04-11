@@ -6,6 +6,18 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 )
 
+type UserMasterTaskRequest struct {
+	Category  string `json:"category"`
+	Frequency string `json:"frequency"`
+	Tasks []string `json:"tasks"`
+}
+
+type UserMasterTaskResponse struct {
+	Category  *string `json:"category"`
+	Frequency string `json:"frequency"`
+	Tasks []*string `json:"tasks"`
+}
+
 type TaskResponse struct {
 	Name      string `json:"name"`
 	Category  *string `json:"category"`
@@ -28,4 +40,25 @@ func NewTaskResponse(val map[string]*dynamodb.AttributeValue) TaskResponse {
 	}
 
 	return task
+}
+
+func NewUserMasterTaskResponses(val []map[string]*dynamodb.AttributeValue) []*UserMasterTaskResponse {
+	var resp []*UserMasterTaskResponse
+
+	for _, category := range val {
+		values := strings.Split(*category["SK"].S, "#")
+
+		r := &UserMasterTaskResponse{
+			Frequency: values[1],
+			Tasks: category["tasks"].SS,
+		}
+
+		if values[2] != "" {
+			r.Category = &values[2]
+		}
+
+		resp = append(resp, r)
+	}
+
+	return resp
 }
