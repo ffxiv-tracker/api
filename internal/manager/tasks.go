@@ -2,10 +2,12 @@ package manager
 
 import (
 	"fmt"
+	"time"
 
 	"ffxiv.anid.dev/internal/config"
 	"ffxiv.anid.dev/internal/dao"
 	"ffxiv.anid.dev/internal/models"
+	"ffxiv.anid.dev/internal/utils"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
@@ -152,4 +154,37 @@ func (tm *TasksManager) GetUserMasterTasks(userID string) ([]*models.UserMasterT
 	}
 
 	return models.NewUserMasterTaskResponses(resp.Items), nil
+}
+
+func (tm *TasksManager) GetUserTasks(userID string, date time.Time) ([]*models.UserTaskResponse, error) {
+	year, week := utils.GetFFWeekYear(date)
+
+	var queryInput = &dynamodb.QueryInput{
+		TableName: aws.String(string(tm.Table)),
+		KeyConditions: map[string]*dynamodb.Condition{
+			"PK": {
+				ComparisonOperator: aws.String(dynamodb.ComparisonOperatorEq),
+				AttributeValueList: []*dynamodb.AttributeValue{
+					{
+						S: aws.String(userID),
+					},
+				},
+			},
+			"SK": {
+				ComparisonOperator: aws.String(dynamodb.ComparisonOperatorBeginsWith),
+				AttributeValueList: []*dynamodb.AttributeValue{
+					{
+						S: aws.String(fmt.Sprintf("%d#%d#", year, week)),
+					},
+				},
+			},
+		},
+	}
+
+	var resp, err = tm.DynSvc.Query(queryInput)
+	if err != nil {
+		return nil, err
+	}
+
+	return models.NewUserTaskResponses(resp.Items, date.Weekday())
 }

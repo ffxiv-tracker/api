@@ -10,9 +10,11 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"time"
 
 	"ffxiv.anid.dev/internal/manager"
 	"ffxiv.anid.dev/internal/models"
+	"ffxiv.anid.dev/internal/utils"
 	"github.com/Netflix/go-env"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
@@ -27,7 +29,7 @@ type Environment struct {
 		ClientSecret *string `env:"OAUTH_CLIENT_SECRET"`
 	}
 
-	Stage string `env:"stage,default=development"`
+	Stage string `env:"STAGE,default=development"`
 }
 
 var conf = &oauth2.Config{
@@ -85,6 +87,8 @@ func NewServer(tasks *manager.TasksManager) (*Server, error) {
 	r.HandleFunc("/tasks", s.getMaster).Methods("GET")
 	r.HandleFunc("/user/tasks", s.getUserMaster).Methods("GET")
 	r.HandleFunc("/user/tasks", s.saveUserMaster).Methods("POST")
+	r.HandleFunc("/user/tasks/current", s.getUserTasksForToday).Methods("GET")
+	r.HandleFunc("/user/tasks/{date:20.*}", s.getUserTasksForDate).Methods("GET")
 	r.HandleFunc("/me", s.me).Methods("GET")
 
 	return s, nil
@@ -186,6 +190,10 @@ func (s *Server) me(w http.ResponseWriter, r *http.Request) {
 			respondWithJSON(w, 200, u)
 		}
 	}
+
+	fmt.Fprintln(w, time.Now())
+	ye,we := utils.GetFFWeekYear(time.Now())
+	fmt.Fprintln(w, ye, we)
 }
 
 func (s *Server) getUser(r *http.Request) *user {
@@ -298,4 +306,36 @@ func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	w.Write(response)
+}
+
+func (s *Server) getUserTasksForToday(w http.ResponseWriter, r *http.Request) {
+	u := s.getUser(r)
+
+	tasks, err := s.tasks.GetUserTasks(u.ID, time.Now())
+	if err != nil {
+		respondWithError(w, 500, err.Error())
+		return
+	}
+
+	respondWithJSON(w, 200, tasks)
+}
+
+func (s *Server) getUserTasksForDate(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	date, err := time.Parse("2006-01-02", vars["date"])
+	if err != nil {
+		respondWithError(w, 400, err.Error())
+		return
+	}
+
+	u := s.getUser(r)
+
+	tasks, err := s.tasks.GetUserTasks(u.ID, date)
+	if err != nil {
+		respondWithError(w, 500, err.Error())
+		return
+	}
+
+	respondWithJSON(w, 200, tasks)
 }

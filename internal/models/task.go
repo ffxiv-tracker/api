@@ -1,7 +1,10 @@
 package models
 
 import (
+	"fmt"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 )
@@ -19,6 +22,12 @@ type UserMasterTaskResponse struct {
 }
 
 type MasterTaskResponse struct {
+	Category  *string   `json:"category"`
+	Frequency string    `json:"frequency"`
+	Tasks     []*string `json:"tasks"`
+}
+
+type UserTaskResponse struct {
 	Category  *string   `json:"category"`
 	Frequency string    `json:"frequency"`
 	Tasks     []*string `json:"tasks"`
@@ -77,4 +86,50 @@ func NewMasterTaskResponses(val []map[string]*dynamodb.AttributeValue) []*Master
 	}
 
 	return resp
+}
+
+func NewUserTaskResponses(val []map[string]*dynamodb.AttributeValue, wday time.Weekday) ([]*UserTaskResponse, error) {
+	resp := make([]*UserTaskResponse, 0)
+
+	index := make(map[string]*UserTaskResponse)
+
+	for _, record := range val {
+		values := strings.Split(*record["SK"].S, "#")
+
+		day := values[2]
+		freq := values[3]
+		cat := values[4]
+		name := values[5]
+
+		if day != "" {
+			d, err := strconv.ParseInt(day, 10, 64)
+			if err != nil {
+				return nil, fmt.Errorf("could not parse day from item: %s, %w", day, err)
+			}
+
+			if d != int64(wday) {
+				continue
+			}
+		}
+
+		if rsp, ok := index[freq+cat]; ok {
+			rsp.Tasks = append(rsp.Tasks, &name)
+		} else {
+			rsp = &UserTaskResponse{
+				Frequency: freq,
+				Tasks:     []*string{&name},
+			}
+
+			if cat != "" {
+				rsp.Category = &cat
+			}
+
+			resp = append(resp, rsp)
+
+			index[freq+cat] = rsp
+		}
+
+	}
+
+	return resp, nil
 }
