@@ -7,50 +7,32 @@ import (
 )
 
 type UserMasterTaskRequest struct {
-	Category  string `json:"category"`
-	Frequency string `json:"frequency"`
-	Tasks []string `json:"tasks"`
+	Category  string   `json:"category"`
+	Frequency string   `json:"frequency"`
+	Tasks     []string `json:"tasks"`
 }
 
 type UserMasterTaskResponse struct {
-	Category  *string `json:"category"`
-	Frequency string `json:"frequency"`
-	Tasks []*string `json:"tasks"`
+	Category  *string   `json:"category"`
+	Frequency string    `json:"frequency"`
+	Tasks     []*string `json:"tasks"`
 }
 
-type TaskResponse struct {
-	Name      string `json:"name"`
-	Category  *string `json:"category"`
-	Frequency string `json:"frequency"`
-	Orphan    bool `json:"orphan"`
-}
-
-func NewTaskResponse(val map[string]*dynamodb.AttributeValue) TaskResponse {
-	values := strings.Split(*val["SK"].S, "#")
-
-	task := TaskResponse{
-		Name:      values[2],
-		Frequency: values[0],
-	}
-
-	if values[1] == "" {
-		task.Orphan = true
-	} else {
-		task.Category = &values[1]
-	}
-
-	return task
+type MasterTaskResponse struct {
+	Category  *string   `json:"category"`
+	Frequency string    `json:"frequency"`
+	Tasks     []*string `json:"tasks"`
 }
 
 func NewUserMasterTaskResponses(val []map[string]*dynamodb.AttributeValue) []*UserMasterTaskResponse {
-	var resp []*UserMasterTaskResponse
+	resp := make([]*UserMasterTaskResponse, 0)
 
 	for _, category := range val {
 		values := strings.Split(*category["SK"].S, "#")
 
 		r := &UserMasterTaskResponse{
 			Frequency: values[1],
-			Tasks: category["tasks"].SS,
+			Tasks:     category["tasks"].SS,
 		}
 
 		if values[2] != "" {
@@ -58,6 +40,40 @@ func NewUserMasterTaskResponses(val []map[string]*dynamodb.AttributeValue) []*Us
 		}
 
 		resp = append(resp, r)
+	}
+
+	return resp
+}
+
+func NewMasterTaskResponses(val []map[string]*dynamodb.AttributeValue) []*MasterTaskResponse {
+	var resp []*MasterTaskResponse
+
+	index := make(map[string]*MasterTaskResponse)
+
+	for _, record := range val {
+		values := strings.Split(*record["SK"].S, "#")
+
+		freq := values[0]
+		cat := values[1]
+		name := values[2]
+
+		if rsp, ok := index[freq+cat]; ok {
+			rsp.Tasks = append(rsp.Tasks, &name)
+		} else {
+			rsp = &MasterTaskResponse{
+				Frequency: freq,
+				Tasks:     []*string{&name},
+			}
+
+			if cat != "" {
+				rsp.Category = &cat
+			}
+
+			resp = append(resp, rsp)
+
+			index[freq+cat] = rsp
+		}
+
 	}
 
 	return resp

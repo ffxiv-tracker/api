@@ -24,6 +24,9 @@ func InitializeServer(c *config.Config) (*server.Server, error) {
 		Table:    dynamoDBTableName,
 		MasterPK: masterPK,
 	}
-	serverServer := server.NewServer(tasksManager)
+	serverServer, err := server.NewServer(tasksManager)
+	if err != nil {
+		return nil, err
+	}
 	return serverServer, nil
 }

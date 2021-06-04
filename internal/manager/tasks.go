@@ -14,20 +14,19 @@ import (
 
 // TasksManager a
 type TasksManager struct {
-	DynSvc dynamodbiface.DynamoDBAPI
-	Table config.DynamoDBTableName
+	DynSvc   dynamodbiface.DynamoDBAPI
+	Table    config.DynamoDBTableName
 	MasterPK config.MasterPK
 }
 
 // GetMasterTasks a
-func (tm *TasksManager) GetMasterTasks() (*[]models.TaskResponse, error) {
+func (tm *TasksManager) GetMasterTasks() ([]*models.MasterTaskResponse, error) {
 	result, err := tm.DynSvc.Query(&dynamodb.QueryInput{
-		TableName: aws.String(string(tm.Table)),
+		TableName:              aws.String(string(tm.Table)),
 		KeyConditionExpression: aws.String("PK = :p"),
 		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-			":p": {S:aws.String(string(tm.MasterPK))},
+			":p": {S: aws.String(string(tm.MasterPK))},
 		},
-
 	})
 	if err != nil {
 		return nil, fmt.Errorf("error while querying for master tasks: %w", err)
@@ -37,20 +36,14 @@ func (tm *TasksManager) GetMasterTasks() (*[]models.TaskResponse, error) {
 		return nil, fmt.Errorf("no master tasks found")
 	}
 
-	tasks := make([]models.TaskResponse, 0)
-
-	for _, record := range result.Items {
-		tasks = append(tasks, models.NewTaskResponse(record))
-	}
-
-	return &tasks, nil
+	return models.NewMasterTaskResponses(result.Items), nil
 }
 
 // SaveUserMasterTasks a
 func (tm *TasksManager) SaveUserMasterTasks(userID string, tasks *models.UserMasterTaskRequest) (*models.UserMasterTaskResponse, error) {
 	taskKey := dao.UserMasterTaskListKey{
 		UserID: userID,
-		Type: string(fmt.Sprintf("%s#%s#%s", tm.MasterPK, tasks.Frequency, tasks.Category)),
+		Type:   string(fmt.Sprintf("%s#%s#%s", tm.MasterPK, tasks.Frequency, tasks.Category)),
 	}
 
 	key, err := dynamodbattribute.MarshalMap(taskKey)
@@ -66,11 +59,11 @@ func (tm *TasksManager) SaveUserMasterTasks(userID string, tasks *models.UserMas
 	}
 
 	result, err := tm.DynSvc.UpdateItem(&dynamodb.UpdateItemInput{
-		Key: key,
-		TableName: aws.String(string(tm.Table)),
-		UpdateExpression: aws.String("SET tasks = :t"),
+		Key:                       key,
+		TableName:                 aws.String(string(tm.Table)),
+		UpdateExpression:          aws.String("SET tasks = :t"),
 		ExpressionAttributeValues: update,
-		ReturnValues: aws.String("UPDATED_NEW"),
+		ReturnValues:              aws.String("UPDATED_NEW"),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("error while updating user tasks: %w", err)
@@ -84,7 +77,7 @@ func (tm *TasksManager) SaveUserMasterTasks(userID string, tasks *models.UserMas
 
 	response := models.UserMasterTaskResponse{
 		Frequency: tasks.Frequency,
-		Tasks: updated.Tasks,
+		Tasks:     updated.Tasks,
 	}
 
 	if tasks.Category != "" {
@@ -107,7 +100,7 @@ func (tm *TasksManager) ValidateUserMasterTaskRequest(tasks *models.UserMasterTa
 			},
 		})
 	}
-	
+
 	input := &dynamodb.BatchGetItemInput{
 		RequestItems: map[string]*dynamodb.KeysAndAttributes{
 			string(tm.Table): {
@@ -115,7 +108,7 @@ func (tm *TasksManager) ValidateUserMasterTaskRequest(tasks *models.UserMasterTa
 			},
 		},
 	}
-	
+
 	batch, err := tm.DynSvc.BatchGetItem(input)
 	if err != nil {
 		return nil, fmt.Errorf("batch load of tasks failed, err: %w", err)
@@ -146,13 +139,13 @@ func (tm *TasksManager) GetUserMasterTasks(userID string) ([]*models.UserMasterT
 				ComparisonOperator: aws.String(dynamodb.ComparisonOperatorBeginsWith),
 				AttributeValueList: []*dynamodb.AttributeValue{
 					{
-						S: aws.String(string(tm.MasterPK)+"#"),
+						S: aws.String(string(tm.MasterPK) + "#"),
 					},
 				},
 			},
 		},
 	}
-	
+
 	var resp, err = tm.DynSvc.Query(queryInput)
 	if err != nil {
 		return nil, err
